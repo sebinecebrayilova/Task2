@@ -1,0 +1,140 @@
+import random
+import time
+
+class User:
+    def _init_(self, fullname, card_number, currency, role="Customer", balance=0):
+        self.fullname = fullname
+        self.card_number = card_number
+        self.currency = currency
+        self.role = role
+        self.balance = balance
+        self.transaction_history = []
+
+    def deposit(self, amount):
+        if amount > 0:
+            self.balance += amount
+            self.transaction_history.append(f"+{amount} {self.currency} yatırıldı.")
+            print(f"{amount} {self.currency} yatırıldı. Güncel bakiye: {self.balance} {self.currency}")
+        else:
+            print("Geçersiz miktar!")
+
+    def withdraw(self, amount):
+        if 0 < amount <= self.balance:
+            self.balance -= amount
+            self.transaction_history.append(f"-{amount} {self.currency} çekildi.")
+            print(f"{amount} {self.currency} çekildi. Güncel bakiye: {self.balance} {self.currency}")
+        else:
+            print("Yetersiz bakiye veya geçersiz miktar!")
+
+    def transfer(self, receiver, amount):
+        commission = amount * 0.02  # %2 komisyon
+        total_amount = amount + commission
+
+        if 0 < total_amount <= self.balance:
+            # 3D Security Simülasyonu
+            security_code = random.randint(1000, 9999)
+            print(f"3D Security Kodu: {security_code}")
+            user_input = int(input("Lütfen 3D güvenlik kodunu girin: "))
+
+            if user_input == security_code:
+                self.balance -= total_amount
+                receiver.balance += amount
+                self.transaction_history.append(f"-{amount} {self.currency} transfer edildi. (Komisyon: {commission} {self.currency})")
+                receiver.transaction_history.append(f"+{amount} {receiver.currency} alındı.")
+                print(f"{amount} {self.currency} {receiver.fullname} hesabına transfer edildi.")
+            else:
+                print("Hatalı 3D güvenlik kodu, işlem iptal edildi.")
+        else:
+            print("Yetersiz bakiye veya geçersiz miktar!")
+
+    def get_transaction_history(self):
+        print(f"\n{self.fullname} - İşlem Geçmişi:")
+        for transaction in self.transaction_history:
+            print(transaction)
+
+class Bank:
+    def _init_(self):
+        self.users = []
+        self.budget = 1000000  # Banka başlangıç bütçesi
+
+    def create_user(self, fullname, card_number, currency, role="Customer", balance=0):
+        new_user = User(fullname, card_number, currency, role, balance)
+        self.users.append(new_user)
+        print(f"{fullname} adlı kullanıcı oluşturuldu.")
+
+    def get_user(self, card_number):
+        for user in self.users:
+            if user.card_number == card_number:
+                return user
+        return None
+
+    def get_bank_budget(self):
+        total_balance = sum(user.balance for user in self.users)
+        print(f"Banka Toplam Bütçesi: {self.budget + total_balance} TRY")
+
+    def give_credit(self, card_number, amount):
+        user = self.get_user(card_number)
+        if user:
+            self.budget -= amount
+            user.balance += amount
+            user.transaction_history.append(f"+{amount} {user.currency} kredi çekildi.")
+            print(f"{amount} {user.currency} kredi verildi. Güncel bakiye: {user.balance} {user.currency}")
+        else:
+            print("Kullanıcı bulunamadı!")
+
+# Banka sistemi başlatılıyor
+bank = Bank()
+
+# Örnek kullanıcılar oluşturuluyor
+bank.create_user("Ahmet Yılmaz", "123456789", "TRY", "Customer", 5000)
+bank.create_user("Zeynep Kaya", "987654321", "TRY", "Manager", 10000)
+
+while True:
+    print("\n1- Para Yatır\n2- Para Çek\n3- Bakiye Sorgula\n4- Para Transferi\n5- İşlem Geçmişi\n6- Kredi Çek\n7- Banka Bütçesi\n8- Çıkış")
+    choice = input("Seçiminizi yapın: ")
+
+    if choice in ["1", "2", "3", "4", "5", "6"]:
+        card_no = input("Kart numaranızı girin: ")
+        user = bank.get_user(card_no)
+
+        if user:
+            if choice == "1":
+                amount = float(input("Yatırılacak miktarı girin: "))
+                user.deposit(amount)
+
+            elif choice == "2":
+                amount = float(input("Çekilecek miktarı girin: "))
+                user.withdraw(amount)
+
+            elif choice == "3":
+                print(f"Bakiye: {user.balance} {user.currency}")
+
+            elif choice == "4":
+                receiver_card = input("Alıcı kart numarasını girin: ")
+                receiver = bank.get_user(receiver_card)
+
+                if receiver:
+                    amount = float(input("Transfer edilecek miktarı girin: "))
+                    user.transfer(receiver, amount)
+                else:
+                    print("Alıcı hesap bulunamadı!")
+
+            elif choice == "5":
+                user.get_transaction_history()
+
+            elif choice == "6":
+                amount = float(input("Çekilecek kredi miktarını girin: "))
+                bank.give_credit(user.card_number, amount)
+
+        else:
+            print("Hesap bulunamadı!")
+
+    elif choice == "7":
+        bank.get_bank_budget()
+
+    elif choice == "8":
+        print("Çıkış yapılıyor...")
+        break
+
+    else:
+        print("Geçersiz seçim, tekrar deneyin.")
